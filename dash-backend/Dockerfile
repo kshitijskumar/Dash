@@ -24,7 +24,7 @@ COPY --from=builder /app/build/libs/app.jar app.jar
 
 EXPOSE 8080
 
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
+ENV JAVA_OPTS="-Xmx512m -Xms256m -Dio.grpc.netty.shaded.io.netty.transport.noNative=false"
 ENV PORT=8080
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

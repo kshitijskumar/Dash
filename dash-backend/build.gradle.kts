@@ -31,7 +31,6 @@ dependencies {
     implementation(libs.ktor.server.config.yaml)
     implementation(libs.firebase.admin)
     implementation(libs.grpc.netty.shaded)
-    implementation(libs.grpc.stub)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }
