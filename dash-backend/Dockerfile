@@ -1,21 +1,28 @@
 # Multi-stage Dockerfile for Ktor Backend
 # Stage 1: Build the application
-FROM gradle:8.5-jdk17 AS builder
+FROM eclipse-temurin:17-jdk-alpine AS builder
 
 WORKDIR /app
 
-# Copy gradle files first for better caching
-COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+# Copy gradle wrapper files
+COPY gradlew ./
+COPY gradlew.bat ./
 COPY gradle ./gradle
 
+# Copy gradle configuration files
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+
+# Make gradlew executable
+RUN chmod +x gradlew
+
 # Download dependencies (cached if gradle files don't change)
-RUN gradle dependencies --no-daemon
+RUN ./gradlew dependencies --no-daemon
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN gradle buildFatJar --no-daemon
+RUN ./gradlew buildFatJar --no-daemon
 
 # Stage 2: Run the application
 FROM eclipse-temurin:17-jre-alpine

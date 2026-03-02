@@ -16,9 +16,11 @@ build/
 .gitignore
 .gitattributes
 
-# Documentation
-*.md
-docs/
+# Documentation (keeping essential ones)
+REFACTORING_SUMMARY.md
+ARCHITECTURE_IMPROVEMENTS.md
+PROJECT_STRUCTURE.md
+FIREBASE_DESIGN.md
 
 # Test outputs
 test-results/
@@ -34,7 +36,7 @@ Thumbs.db
 *.swp
 *~
 
-# Gradle wrapper (keeping it as we need it for build)
-# gradlew
-# gradlew.bat
-# gradle/
+# Keep Gradle wrapper - needed for build
+# !gradlew
+# !gradlew.bat
+# !gradle/
