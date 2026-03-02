@@ -1,4 +1,4 @@
-package com.example
+package com.example.config
 
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.firestore.Firestore
@@ -61,6 +61,9 @@ fun Application.configureFirebase() {
         if (projectId != null && serviceAccountJson != null) {
             FirebaseService.initialize(projectId, serviceAccountJson)
             log.info("Firebase initialized successfully with project ID: $projectId")
+            
+            DependencyInjection.initialize()
+            log.info("Dependency injection initialized successfully")
         } else {
             log.warn("Firebase configuration not found. Firebase services will not be available.")
             log.warn("Required env vars: FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT_JSON")
