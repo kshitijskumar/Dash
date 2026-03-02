@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/build/libs/*-all.jar app.jar
+COPY --from=builder /app/build/libs/app.jar app.jar
 
 EXPOSE 8080
 
