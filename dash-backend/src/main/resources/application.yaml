@@ -4,3 +4,7 @@ ktor:
             - com.example.ApplicationKt.module
     deployment:
         port: 8080
+
+firebase:
+    projectId: ${FIREBASE_PROJECT_ID}
+    serviceAccountJson: ${FIREBASE_SERVICE_ACCOUNT_JSON}

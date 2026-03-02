@@ -14,5 +14,29 @@ fun Application.configureRouting() {
         get("/") {
             call.respondText("Hello World!")
         }
+        
+        get("/health") {
+            if (FirebaseService.isInitialized()) {
+                try {
+                    val firestore = FirebaseService.getFirestore()
+                    call.respond(mapOf(
+                        "status" to "healthy",
+                        "firebase" to "initialized"
+                    ))
+                } catch (e: Exception) {
+                    call.respond(mapOf(
+                        "status" to "unhealthy",
+                        "firebase" to "error",
+                        "error" to e.message
+                    ))
+                }
+            } else {
+                call.respond(mapOf(
+                    "status" to "healthy",
+                    "firebase" to "not initialized"
+                ))
+            }
+        }
     }
 }
+
