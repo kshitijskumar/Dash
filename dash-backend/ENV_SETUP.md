@@ -95,6 +95,31 @@ Expected response when working:
 }
 ```
 
+## Test the /all Endpoint
+
+Fetch all documents from the "data" collection:
+
+```bash
+curl http://localhost:8080/all
+```
+
+Expected response:
+```json
+{
+  "collection": "data",
+  "count": 1,
+  "documents": [
+    {
+      "id": "document-id",
+      "data": {
+        "field1": "value1",
+        "field2": "value2"
+      }
+    }
+  ]
+}
+```
+
 ## Troubleshooting
 
 ### "Firebase configuration not found"

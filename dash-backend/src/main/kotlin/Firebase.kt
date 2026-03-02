@@ -7,26 +7,43 @@ import com.google.firebase.FirebaseOptions
 import com.google.firebase.cloud.FirestoreClient
 import io.ktor.server.application.*
 import java.io.ByteArrayInputStream
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 object FirebaseService {
+    @Volatile
     private var firestore: Firestore? = null
+    
+    @Volatile
     private var initialized = false
     
+    private val initLock = ReentrantLock()
+    
     fun initialize(projectId: String, serviceAccountJson: String) {
-        if (FirebaseApp.getApps().isEmpty()) {
-            val serviceAccountStream = ByteArrayInputStream(serviceAccountJson.toByteArray())
-            val credentials = GoogleCredentials.fromStream(serviceAccountStream)
-            
-            val options = FirebaseOptions.builder()
-                .setCredentials(credentials)
-                .setProjectId(projectId)
-                .build()
-            
-            FirebaseApp.initializeApp(options)
+        if (initialized) {
+            return
         }
         
-        firestore = FirestoreClient.getFirestore()
-        initialized = true
+        initLock.withLock {
+            if (initialized) {
+                return
+            }
+            
+            if (FirebaseApp.getApps().isEmpty()) {
+                val serviceAccountStream = ByteArrayInputStream(serviceAccountJson.toByteArray())
+                val credentials = GoogleCredentials.fromStream(serviceAccountStream)
+                
+                val options = FirebaseOptions.builder()
+                    .setCredentials(credentials)
+                    .setProjectId(projectId)
+                    .build()
+                
+                FirebaseApp.initializeApp(options)
+            }
+            
+            firestore = FirestoreClient.getFirestore()
+            initialized = true
+        }
     }
     
     fun getFirestore(): Firestore {
@@ -43,12 +60,13 @@ fun Application.configureFirebase() {
         
         if (projectId != null && serviceAccountJson != null) {
             FirebaseService.initialize(projectId, serviceAccountJson)
-            log.info("Firebase initialized with project ID: $projectId")
+            log.info("Firebase initialized successfully with project ID: $projectId")
         } else {
             log.warn("Firebase configuration not found. Firebase services will not be available.")
+            log.warn("Required env vars: FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT_JSON")
         }
     } catch (e: Exception) {
-        log.error("Failed to initialize Firebase: ${e.message}")
+        log.error("Failed to initialize Firebase: ${e.message}", e)
         log.warn("Firebase services will not be available.")
     }
 }
