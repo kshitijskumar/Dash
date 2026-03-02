@@ -1,0 +1,40 @@
+# Build outputs
+build/
+.gradle/
+*.jar
+*.class
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Test outputs
+test-results/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Gradle wrapper (keeping it as we need it for build)
+# gradlew
+# gradlew.bat
+# gradle/
