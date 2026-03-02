@@ -87,6 +87,83 @@ fun Application.configureRouting() {
                 )
             }
         }
+        
+        get("/dashls/{userId}/{token}") {
+            if (!FirebaseService.isInitialized()) {
+                call.respond(
+                    HttpStatusCode.ServiceUnavailable,
+                    mapOf("error" to "Firebase is not initialized")
+                )
+                return@get
+            }
+            
+            val userId = call.parameters["userId"]
+            val token = call.parameters["token"]
+            
+            if (userId.isNullOrBlank()) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("error" to "userId is required")
+                )
+                return@get
+            }
+            
+            if (token.isNullOrBlank()) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    mapOf("error" to "token is required")
+                )
+                return@get
+            }
+            
+            try {
+                val firestore = FirebaseService.getFirestore()
+                
+                val result = withContext(Dispatchers.IO) {
+                    val querySnapshot = firestore.collection("data")
+                        .whereEqualTo("userId", userId)
+                        .whereEqualTo("token", token)
+                        .limit(1)
+                        .get()
+                        .get()
+                    
+                    if (querySnapshot.isEmpty) {
+                        null
+                    } else {
+                        val doc = querySnapshot.documents[0]
+                        val data = doc.data
+                        
+                        buildJsonObject {
+                            put("userId", data["userId"]?.toString() ?: "")
+                            
+                            val linksValue = data["links"]
+                            if (linksValue != null) {
+                                put("links", convertToJsonElement(linksValue))
+                            } else {
+                                putJsonArray("links") {}
+                            }
+                        }
+                    }
+                }
+                
+                if (result != null) {
+                    call.respondText(result.toString(), ContentType.Application.Json, HttpStatusCode.OK)
+                } else {
+                    call.respond(
+                        HttpStatusCode.NotFound,
+                        mapOf("error" to "No data found for the provided userId and token")
+                    )
+                }
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    mapOf(
+                        "error" to "Failed to fetch data",
+                        "message" to e.message
+                    )
+                )
+            }
+        }
     }
 }
 
