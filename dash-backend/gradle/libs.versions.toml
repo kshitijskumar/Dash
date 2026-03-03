@@ -3,7 +3,7 @@ kotlin = "2.3.0"
 ktor = "3.4.0"
 logback = "1.4.14"
 firebase-admin = "9.3.0"
-grpc = "1.60.0"
+grpc = "1.62.2"
 
 [libraries]
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }

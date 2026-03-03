@@ -35,6 +35,12 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
 }
 
+configurations.all {
+    resolutionStrategy {
+        force(libs.grpc.netty.shaded)
+    }
+}
+
 tasks.withType<Jar> {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
