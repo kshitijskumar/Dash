@@ -251,6 +251,19 @@ ENV PORT=8080  # Default for local testing
 - `FIREBASE_PROJECT_ID`
 - `FIREBASE_SERVICE_ACCOUNT_JSON`
 
+### Firestore gRPC Transport on Render
+
+If Render logs show an error similar to:
+`Address types of NameResolver 'unix' for 'firestore.googleapis.com:443' not supported by transport`
+
+set this JVM flag in Docker runtime:
+
+```dockerfile
+ENV JAVA_OPTS="-Xmx512m -Xms256m -Dio.grpc.netty.shaded.io.netty.transport.noNative=true"
+```
+
+This disables Netty native transport in the container and uses a compatible transport for Firestore gRPC.
+
 **Automatically set by Render:**
 - `PORT` (don't set manually)
 
