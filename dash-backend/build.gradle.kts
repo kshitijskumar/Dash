@@ -21,6 +21,13 @@ ktor {
     }
 }
 
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+    // gRPC/Google client libraries rely on META-INF/services entries.
+    // In a fat JAR, these files must be merged instead of dropped.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mergeServiceFiles()
+}
+
 dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.core)
