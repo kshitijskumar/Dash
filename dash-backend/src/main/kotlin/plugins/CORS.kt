@@ -18,28 +18,24 @@ fun Application.configureCORS() {
         allowHeader(HttpHeaders.AccessControlAllowOrigin)
         
         // Get allowed origins from environment variable or use localhost defaults
-        val allowedOrigins = System.getenv("ALLOWED_ORIGINS")
-            ?.split(",")
-            ?.map { it.trim() }
-            ?: listOf(
-                "http://localhost:8081",
-                "http://localhost:8080"
-            )
+        val allowedOriginsString = System.getenv("ALLOWED_ORIGINS")
         
-        // Parse and allow each origin
-        allowedOrigins.forEach { origin ->
-            try {
-                // Use Ktor's URL parser
-                val url = Url(origin)
-                allowHost(
-                    host = url.host,
-                    schemes = listOf(url.protocol.name),
-                    subDomains = emptyList()
-                )
-                
-//                log.info("CORS: Allowed origin - $origin")
-            } catch (e: Exception) {
-//                log.error("CORS: Failed to parse origin - $origin", e)
+        if (allowedOriginsString.isNullOrBlank()) {
+            // Development mode - allow localhost with any port
+            environment.log.info("CORS: Development mode - allowing localhost")
+            allowHost("localhost", schemes = listOf("http", "https"))
+            allowHost("127.0.0.1", schemes = listOf("http", "https"))
+        } else {
+            // Production mode - only allow specified origins
+            val allowedOrigins = allowedOriginsString.split(",").map { it.trim() }
+            allowedOrigins.forEach { origin ->
+                try {
+                    val url = Url(origin)
+                    allowHost(url.host, schemes = listOf(url.protocol.name))
+                    environment.log.info("CORS: Allowed origin - $origin")
+                } catch (e: Exception) {
+                    environment.log.error("CORS: Failed to parse origin - $origin", e)
+                }
             }
         }
         
