@@ -1,10 +1,7 @@
 package com.example
 
 import com.example.config.configureFirebase
-import com.example.plugins.configureFirebasePlugin
-import com.example.plugins.configureMonitoring
-import com.example.plugins.configureRouting
-import com.example.plugins.configureSerialization
+import com.example.plugins.*
 import io.ktor.server.application.*
 
 fun main(args: Array<String>) {
@@ -13,6 +10,7 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     configureFirebase()
+    configureCORS()
     configureSerialization()
     configureMonitoring()
     configureFirebasePlugin()
