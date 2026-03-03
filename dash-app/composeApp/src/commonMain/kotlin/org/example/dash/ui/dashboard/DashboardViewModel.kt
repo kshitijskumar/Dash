@@ -8,9 +8,12 @@ import org.example.dash.domain.model.DashLinkDomain
 import org.example.dash.domain.model.Result
 import org.example.dash.domain.usecase.GetUserDashboardUseCase
 import org.example.dash.ui.base.BaseViewModel
+import org.example.dash.utils.UrlOpener
+import org.example.dash.utils.getUrlOpener
 
 class DashboardViewModel(
-    private val getUserDashboardUseCase: GetUserDashboardUseCase = GetUserDashboardUseCase()
+    private val getUserDashboardUseCase: GetUserDashboardUseCase = GetUserDashboardUseCase(),
+    private val urlOpener: UrlOpener = getUrlOpener()
 ) : BaseViewModel<DashboardState, DashboardIntent>() {
 
     private var allLinks: List<DashLinkDomain>? = null
@@ -26,6 +29,7 @@ class DashboardViewModel(
         when (intent) {
             is DashboardIntent.Initialize -> initialize()
             is DashboardIntent.SearchQueryEntered -> handleSearch(intent.query)
+            is DashboardIntent.LinkClicked -> handleLinkClick(intent.url)
         }
     }
 
@@ -85,6 +89,10 @@ class DashboardViewModel(
             
             updateState { it.copy(links = filteredLinks) }
         }
+    }
+
+    private fun handleLinkClick(url: String) {
+        urlOpener.openUrl(url)
     }
 
 }
