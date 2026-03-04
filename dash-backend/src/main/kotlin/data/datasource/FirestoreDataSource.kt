@@ -21,4 +21,23 @@ class FirestoreDataSource(private val firestore: Firestore) {
         val querySnapshot = firestore.collection(collectionName).get().get()
         return querySnapshot.documents
     }
+    
+    fun addLinkToUser(userId: String, token: String, linkData: Map<String, Any>): Boolean {
+        val querySnapshot = firestore.collection(collectionName)
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("token", token)
+            .limit(1)
+            .get()
+            .get()
+        
+        if (querySnapshot.isEmpty) {
+            return false
+        }
+        
+        val document = querySnapshot.documents[0]
+        document.reference.update("links", com.google.cloud.firestore.FieldValue.arrayUnion(linkData))
+            .get()
+        
+        return true
+    }
 }

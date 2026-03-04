@@ -30,6 +30,17 @@ class FirestoreDashboardRepository(
         }
     }
     
+    override suspend fun addLink(userId: String, token: String, link: Link): Boolean {
+        return withContext(Dispatchers.IO) {
+            val linkData = mapOf(
+                "id" to link.id,
+                "name" to link.name,
+                "url" to link.url
+            )
+            dataSource.addLinkToUser(userId, token, linkData)
+        }
+    }
+    
     private fun mapToDashboardData(doc: DocumentSnapshot): DashboardData {
         val data = doc.data ?: emptyMap()
         val userId = data["userId"]?.toString() ?: ""
