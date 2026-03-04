@@ -15,4 +15,5 @@ sealed class DashboardIntent {
     data object Initialize : DashboardIntent()
     data class SearchQueryEntered(val query: String) : DashboardIntent()
     data class LinkClicked(val url: String) : DashboardIntent()
+    data object Retry : DashboardIntent()
 }

@@ -61,11 +61,28 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = state.error ?: "Something went wrong",
-                        color = Color.Red,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = state.error ?: "Something went wrong",
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Button(
+                            onClick = { viewModel.processIntent(DashboardIntent.Retry) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF1976D2)
+                            )
+                        ) {
+                            Text("Retry")
+                        }
+                    }
                 }
             }
             state.links.isNullOrEmpty() -> {

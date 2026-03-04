@@ -33,6 +33,7 @@ class DashboardViewModel(
             is DashboardIntent.Initialize -> initialize()
             is DashboardIntent.SearchQueryEntered -> handleSearch(intent.query)
             is DashboardIntent.LinkClicked -> handleLinkClick(intent.url)
+            is DashboardIntent.Retry -> retry()
         }
     }
 
@@ -96,6 +97,10 @@ class DashboardViewModel(
 
     private fun handleLinkClick(url: String) {
         urlOpener.openUrl(url)
+    }
+
+    private fun retry() {
+        initialize()
     }
 
 }
