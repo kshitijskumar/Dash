@@ -1,6 +1,7 @@
 package org.example.dash.data.network
 
 import io.ktor.client.*
+import io.ktor.client.engine.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
@@ -9,17 +10,19 @@ import kotlinx.serialization.json.Json
 import org.example.dash.utils.AppJson
 import org.example.dash.utils.Constants
 
+expect fun getHttpClientEngine(): HttpClientEngine
+
 object HttpClientFactory {
     
     fun create(): HttpClient {
-        return HttpClient {
+        return HttpClient(getHttpClientEngine()) {
             install(ContentNegotiation) {
                 json(AppJson)
             }
             
             install(Logging) {
                 logger = Logger.DEFAULT
-                level = LogLevel.INFO
+                level = LogLevel.ALL
             }
             
             install(HttpTimeout) {

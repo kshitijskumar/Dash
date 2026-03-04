@@ -13,8 +13,11 @@ import org.example.dash.utils.getUrlOpener
 
 class DashboardViewModel(
     private val getUserDashboardUseCase: GetUserDashboardUseCase = GetUserDashboardUseCase(),
-    private val urlOpener: UrlOpener = getUrlOpener()
+    private val lazyUrlOpener: Lazy<UrlOpener> = lazy { getUrlOpener() }
 ) : BaseViewModel<DashboardState, DashboardIntent>() {
+
+
+    private val urlOpener by lazyUrlOpener
 
     private var allLinks: List<DashLinkDomain>? = null
     private var searchJob: Job? = null

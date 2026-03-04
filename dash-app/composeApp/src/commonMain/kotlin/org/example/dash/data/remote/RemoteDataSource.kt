@@ -15,7 +15,10 @@ class RemoteDataSource(
             .replace(PATH_USERID, userId)
             .replace(PATH_TOKEN, token)
 
-        return httpClient.get(url).body()
+        println("RemoteDataSource: Making request to: $url")
+        val response = httpClient.get(url).body<DashLinksResponse>()
+        println("RemoteDataSource: Got response: $response")
+        return response
     }
 
     companion object {
