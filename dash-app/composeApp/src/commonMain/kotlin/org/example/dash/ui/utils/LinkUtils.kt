@@ -1,5 +1,7 @@
 package org.example.dash.ui.utils
 
+import org.example.dash.ui.theme.AppColors
+
 fun extractInitials(name: String): String {
     val trimmedName = name.trim()
     val words = trimmedName.split(Regex("\\s+")).filter { it.isNotEmpty() }
@@ -34,25 +36,7 @@ private fun extractFromSingleWord(word: String): String {
 }
 
 fun getColorForName(name: String): Long {
-    val colors = listOf(
-        0xFFE57373, // Red
-        0xFFBA68C8, // Purple
-        0xFF64B5F6, // Blue
-        0xFF4DD0E1, // Cyan
-        0xFF81C784, // Green
-        0xFFFFD54F, // Amber
-        0xFFFF8A65, // Deep Orange
-        0xFFA1887F, // Brown
-        0xFF90A4AE, // Blue Grey
-        0xFFF06292, // Pink
-        0xFF9575CD, // Deep Purple
-        0xFF4FC3F7, // Light Blue
-        0xFF4DB6AC, // Teal
-        0xFFAED581, // Light Green
-        0xFFFFB74D, // Orange
-    )
-    
     val hash = name.hashCode()
-    val index = (hash and Int.MAX_VALUE) % colors.size
-    return colors[index]
+    val index = (hash and Int.MAX_VALUE) % AppColors.LinkColors.size
+    return AppColors.LinkColors[index]
 }

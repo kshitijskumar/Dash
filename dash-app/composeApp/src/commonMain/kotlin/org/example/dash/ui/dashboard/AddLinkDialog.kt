@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import org.example.dash.ui.theme.AppColors
 
 @Composable
 fun AddLinkDialog(
@@ -28,7 +29,7 @@ fun AddLinkDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = AppColors.Surface
             )
         ) {
             Column(
@@ -45,7 +46,8 @@ fun AddLinkDialog(
                     Text(
                         text = "Add New Link",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.TextPrimary
                     )
 
                     TextButton(
@@ -55,7 +57,7 @@ fun AddLinkDialog(
                         Text(
                             text = "Close",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = AppColors.TextSecondary
                         )
                     }
                 }
@@ -70,7 +72,7 @@ fun AddLinkDialog(
                             .padding(bottom = 16.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                            containerColor = AppColors.ErrorContainer
                         )
                     ) {
                         Row(
@@ -83,7 +85,7 @@ fun AddLinkDialog(
                             Text(
                                 text = error,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error,
+                                color = AppColors.ErrorText,
                                 modifier = Modifier.weight(1f),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
@@ -92,7 +94,8 @@ fun AddLinkDialog(
                             TextButton(onClick = onErrorDismiss) {
                                 Text(
                                     text = "Dismiss",
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.ErrorText
                                 )
                             }
                         }
@@ -103,20 +106,27 @@ fun AddLinkDialog(
                 OutlinedTextField(
                     value = dialogState.linkName,
                     onValueChange = onNameChange,
-                    label = { Text("Link Name") },
-                    placeholder = { Text("e.g., GitHub") },
+                    label = { Text("Link Name", color = AppColors.TextSecondary) },
+                    placeholder = { Text("e.g., GitHub", color = AppColors.TextDisabled) },
                     isError = dialogState.nameError != null,
                     supportingText = dialogState.nameError?.let { 
-                        { Text(it, color = MaterialTheme.colorScheme.error) } 
+                        { Text(it, color = AppColors.ErrorText) } 
                     },
                     enabled = !dialogState.isLoading,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF1976D2),
-                        unfocusedBorderColor = Color(0xFFE0E0E0),
-                        errorBorderColor = MaterialTheme.colorScheme.error
+                        focusedContainerColor = AppColors.Background,
+                        unfocusedContainerColor = AppColors.Background,
+                        disabledContainerColor = AppColors.Background,
+                        focusedBorderColor = AppColors.BorderFocused,
+                        unfocusedBorderColor = AppColors.Border,
+                        errorBorderColor = AppColors.ErrorText,
+                        focusedTextColor = AppColors.TextPrimary,
+                        unfocusedTextColor = AppColors.TextPrimary,
+                        disabledTextColor = AppColors.TextDisabled,
+                        cursorColor = AppColors.Primary
                     )
                 )
 
@@ -126,20 +136,27 @@ fun AddLinkDialog(
                 OutlinedTextField(
                     value = dialogState.linkUrl,
                     onValueChange = onUrlChange,
-                    label = { Text("URL") },
-                    placeholder = { Text("https://example.com") },
+                    label = { Text("URL", color = AppColors.TextSecondary) },
+                    placeholder = { Text("https://example.com", color = AppColors.TextDisabled) },
                     isError = dialogState.urlError != null,
                     supportingText = dialogState.urlError?.let { 
-                        { Text(it, color = MaterialTheme.colorScheme.error) } 
+                        { Text(it, color = AppColors.ErrorText) } 
                     },
                     enabled = !dialogState.isLoading,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF1976D2),
-                        unfocusedBorderColor = Color(0xFFE0E0E0),
-                        errorBorderColor = MaterialTheme.colorScheme.error
+                        focusedContainerColor = AppColors.Background,
+                        unfocusedContainerColor = AppColors.Background,
+                        disabledContainerColor = AppColors.Background,
+                        focusedBorderColor = AppColors.BorderFocused,
+                        unfocusedBorderColor = AppColors.Border,
+                        errorBorderColor = AppColors.ErrorText,
+                        focusedTextColor = AppColors.TextPrimary,
+                        unfocusedTextColor = AppColors.TextPrimary,
+                        disabledTextColor = AppColors.TextDisabled,
+                        cursorColor = AppColors.Primary
                     )
                 )
 
@@ -153,15 +170,17 @@ fun AddLinkDialog(
                         .fillMaxWidth()
                         .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1976D2),
-                        disabledContainerColor = Color(0xFF1976D2).copy(alpha = 0.5f)
+                        containerColor = AppColors.Primary,
+                        contentColor = AppColors.OnPrimary,
+                        disabledContainerColor = AppColors.Primary.copy(alpha = 0.5f),
+                        disabledContentColor = AppColors.OnPrimary.copy(alpha = 0.5f)
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (dialogState.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            color = Color.White,
+                            color = AppColors.OnPrimary,
                             strokeWidth = 2.dp
                         )
                     } else {

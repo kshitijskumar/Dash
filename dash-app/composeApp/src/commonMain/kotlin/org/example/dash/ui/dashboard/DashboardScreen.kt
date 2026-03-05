@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.example.dash.domain.model.DashLinkDomain
+import org.example.dash.ui.theme.AppColors
 import org.example.dash.ui.utils.extractInitials
 import org.example.dash.ui.utils.getColorForName
 
@@ -41,8 +42,8 @@ fun DashboardScreen(
             if (!state.isLoading) {
                 FloatingActionButton(
                     onClick = { viewModel.processIntent(DashboardIntent.OpenAddLinkDialog) },
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = AppColors.Primary,
+                    contentColor = AppColors.OnPrimary
                 ) {
                     Text(
                         text = "+",
@@ -56,7 +57,7 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(AppColors.Background)
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
@@ -76,7 +77,7 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = AppColors.Primary)
                     }
                 }
                 state.error != null -> {
@@ -90,7 +91,7 @@ fun DashboardScreen(
                         ) {
                             Text(
                                 text = state.error ?: "Something went wrong",
-                                color = Color.Red,
+                                color = AppColors.ErrorText,
                                 style = MaterialTheme.typography.bodyLarge,
                                 textAlign = TextAlign.Center
                             )
@@ -100,7 +101,8 @@ fun DashboardScreen(
                             Button(
                                 onClick = { viewModel.processIntent(DashboardIntent.Retry) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF1976D2)
+                                    containerColor = AppColors.Primary,
+                                    contentColor = AppColors.OnPrimary
                                 )
                             ) {
                                 Text("Retry")
@@ -119,7 +121,7 @@ fun DashboardScreen(
                             else 
                                 "No links found for \"${state.searchText}\"",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Gray
+                            color = AppColors.TextSecondary
                         )
                     }
                 }
@@ -162,14 +164,17 @@ fun SearchBar(
         value = searchText,
         onValueChange = onSearchTextChanged,
         modifier = modifier,
-        placeholder = { Text("Search links...") },
+        placeholder = { Text("Search links...", color = AppColors.TextSecondary) },
         singleLine = true,
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            focusedBorderColor = Color(0xFF1976D2),
-            unfocusedBorderColor = Color(0xFFE0E0E0)
+            focusedContainerColor = AppColors.Surface,
+            unfocusedContainerColor = AppColors.Surface,
+            focusedBorderColor = AppColors.BorderFocused,
+            unfocusedBorderColor = AppColors.Border,
+            focusedTextColor = AppColors.TextPrimary,
+            unfocusedTextColor = AppColors.TextPrimary,
+            cursorColor = AppColors.Primary
         )
     )
 }
@@ -236,6 +241,7 @@ fun LinkItem(
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            color = AppColors.TextPrimary,
             modifier = Modifier.fillMaxWidth()
         )
     }
