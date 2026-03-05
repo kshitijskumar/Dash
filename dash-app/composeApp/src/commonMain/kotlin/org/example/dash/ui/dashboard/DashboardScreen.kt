@@ -9,8 +9,10 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,85 +32,123 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel { DashboardViewModel() }
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-            .padding(16.dp)
-    ) {
-        SearchBar(
-            searchText = state.searchText,
-            onSearchTextChanged = { query ->
-                viewModel.processIntent(DashboardIntent.SearchQueryEntered(query))
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            state.error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = state.error ?: "Something went wrong",
-                            color = Color.Red,
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Button(
-                            onClick = { viewModel.processIntent(DashboardIntent.Retry) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF1976D2)
-                            )
-                        ) {
-                            Text("Retry")
-                        }
-                    }
-                }
-            }
-            state.links.isNullOrEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            // Only show FAB when not loading
+            if (!state.isLoading) {
+                FloatingActionButton(
+                    onClick = { viewModel.processIntent(DashboardIntent.OpenAddLinkDialog) },
+                    containerColor = Color(0xFF1976D2),
+                    contentColor = Color.White
                 ) {
                     Text(
-                        text = if (state.searchText.isEmpty()) 
-                            "No links available" 
-                        else 
-                            "No links found for \"${state.searchText}\"",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray
+                        text = "+",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-            else -> {
-                LinksGrid(
-                    links = state.links ?: emptyList(),
-                    onLinkClick = { url ->
-                        viewModel.processIntent(DashboardIntent.LinkClicked(url))
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF5F5F5))
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            SearchBar(
+                searchText = state.searchText,
+                onSearchTextChanged = { query ->
+                    viewModel.processIntent(DashboardIntent.SearchQueryEntered(query))
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
-                )
+                }
+                state.error != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = state.error ?: "Something went wrong",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center
+                            )
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            Button(
+                                onClick = { viewModel.processIntent(DashboardIntent.Retry) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF1976D2)
+                                )
+                            ) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+                state.links.isNullOrEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (state.searchText.isEmpty()) 
+                                "No links available" 
+                            else 
+                                "No links found for \"${state.searchText}\"",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Gray
+                        )
+                    }
+                }
+                else -> {
+                    LinksGrid(
+                        links = state.links ?: emptyList(),
+                        onLinkClick = { url ->
+                            viewModel.processIntent(DashboardIntent.LinkClicked(url))
+                        }
+                    )
+                }
             }
         }
+    }
+
+    // Show Add Link Dialog
+    state.addLinkDialogState?.let { dialogState ->
+        AddLinkDialog(
+            dialogState = dialogState,
+            onDismiss = { viewModel.processIntent(DashboardIntent.CloseAddLinkDialog) },
+            onNameChange = { name -> 
+                viewModel.processIntent(DashboardIntent.UpdateLinkName(name)) 
+            },
+            onUrlChange = { url -> 
+                viewModel.processIntent(DashboardIntent.UpdateLinkUrl(url)) 
+            },
+            onSave = { viewModel.processIntent(DashboardIntent.SaveLink) },
+            onErrorDismiss = { viewModel.processIntent(DashboardIntent.DismissAddLinkError) }
+        )
     }
 }
 

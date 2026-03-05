@@ -10,3 +10,6 @@ class InvalidCredentialsException :
 
 class FirebaseNotInitializedException : 
     DomainException("Firebase service is not initialized")
+
+class InvalidUrlException(url: String) :
+    DomainException("Invalid URL format: $url")
