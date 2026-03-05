@@ -39,7 +39,6 @@ COPY gradle.properties .
 RUN echo "sdk.dir=$ANDROID_HOME" > local.properties
 
 # CRITICAL FIX: Override memory settings for cloud build environment
-# Reduce from 4GB to 2GB for Gradle, 1.5GB for Kotlin daemon
 RUN echo "" >> gradle.properties && \
     echo "# Docker build overrides - optimized for cloud environments" >> gradle.properties && \
     echo "org.gradle.jvmargs=-Xmx2048M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512m" >> gradle.properties && \
@@ -60,40 +59,70 @@ RUN ./gradlew --version --no-daemon
 # Copy source code
 COPY composeApp composeApp
 
-# Build the wasm target with optimized settings
-# Capture full output to build.log for debugging
+# DIAGNOSTIC: List all available wasmJs tasks
+RUN echo "=== Available WasmJS Tasks ===" && \
+    ./gradlew tasks --all --no-daemon 2>&1 | grep -i "wasmjs" || echo "No wasmJs tasks found in grep"
+
+# Build with the distribution task and capture output
 RUN ./gradlew :composeApp:wasmJsBrowserDistribution \
     --no-daemon \
     --no-parallel \
     --stacktrace \
-    --info \
-    2>&1 | tee build.log || \
-    (echo "============================================" && \
-     echo "BUILD FAILED - Last 200 lines of output:" && \
-     echo "============================================" && \
-     tail -200 build.log && \
-     echo "============================================" && \
-     echo "Checking for partial build artifacts..." && \
-     ls -la composeApp/build/ 2>/dev/null || true && \
-     exit 1)
+    2>&1 | tee build.log
 
-# Verify the build output exists
-RUN ls -la composeApp/build/dist/wasmJs/productionExecutable && \
-    echo "=== BUILD SUCCESSFUL ===" && \
-    echo "Build artifacts:" && \
-    find composeApp/build/dist/wasmJs/productionExecutable -type f | head -20
+# DIAGNOSTIC: Show what was actually built
+RUN echo "=== Build completed, investigating output ===" && \
+    echo "--- Checking build/dist structure ---" && \
+    ls -la composeApp/build/dist/ 2>/dev/null || echo "No dist/ directory" && \
+    ls -la composeApp/build/dist/wasmJs/ 2>/dev/null || echo "No dist/wasmJs/ directory" && \
+    echo "--- Looking for any wasmJs directories ---" && \
+    find composeApp/build -type d -name "*wasmJs*" -o -name "*wasm*" 2>/dev/null || echo "No wasm directories found" && \
+    echo "--- Looking for .wasm and .js files ---" && \
+    find composeApp/build -type f \( -name "*.wasm" -o -name "*.mjs" -o -name "*.js" \) 2>/dev/null | head -30 || echo "No wasm/js files found" && \
+    echo "--- Full build directory listing (top level) ---" && \
+    ls -la composeApp/build/
+
+# Find and copy to a standard location
+RUN mkdir -p /app/output && \
+    if [ -d "composeApp/build/dist/wasmJs/productionExecutable" ]; then \
+        echo "✓ Found: productionExecutable"; \
+        cp -r composeApp/build/dist/wasmJs/productionExecutable/* /app/output/; \
+    elif [ -d "composeApp/build/dist/wasmJs/developmentExecutable" ]; then \
+        echo "✓ Found: developmentExecutable"; \
+        cp -r composeApp/build/dist/wasmJs/developmentExecutable/* /app/output/; \
+    elif [ -d "composeApp/build/compileSync/wasmJs/main/productionExecutable/kotlin" ]; then \
+        echo "✓ Found: compileSync location"; \
+        cp -r composeApp/build/compileSync/wasmJs/main/productionExecutable/kotlin/* /app/output/; \
+    else \
+        echo "✗ Could not find standard output directory"; \
+        echo "=== Searching entire build for index.html ==="; \
+        find composeApp/build -name "index.html" -type f; \
+        echo "=== Full directory tree (limited depth) ==="; \
+        find composeApp/build -maxdepth 4 -type d; \
+        exit 1; \
+    fi && \
+    echo "=== Output copied to /app/output ===" && \
+    ls -la /app/output
 
 # Production stage - serve static files
 FROM nginx:alpine
 
-# Copy built files from build stage
-COPY --from=build /app/composeApp/build/dist/wasmJs/productionExecutable /usr/share/nginx/html
+# Copy built files from standardized location
+COPY --from=build /app/output /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Verify files were copied
-RUN ls -la /usr/share/nginx/html
+RUN echo "=== Files in nginx html directory ===" && \
+    ls -la /usr/share/nginx/html && \
+    echo "=== Checking for index.html ===" && \
+    if [ -f "/usr/share/nginx/html/index.html" ]; then \
+        echo "✓ index.html found"; \
+    else \
+        echo "✗ index.html NOT found"; \
+        find /usr/share/nginx/html -type f | head -20; \
+    fi
 
 EXPOSE 80
 
