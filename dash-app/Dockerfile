@@ -37,6 +37,15 @@ COPY gradle.properties .
 # Create local.properties for Android SDK location
 RUN echo "sdk.dir=$ANDROID_HOME" > local.properties
 
+# CRITICAL FIX: Override memory settings for cloud build environment
+# Reduce from 4GB to 2GB for Gradle, 1.5GB for Kotlin daemon
+RUN echo "" >> gradle.properties && \
+    echo "# Docker build overrides - optimized for cloud environments" >> gradle.properties && \
+    echo "org.gradle.jvmargs=-Xmx2048M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512m" >> gradle.properties && \
+    echo "kotlin.daemon.jvmargs=-Xmx1536M" >> gradle.properties && \
+    echo "org.gradle.parallel=false" >> gradle.properties && \
+    echo "org.gradle.caching=false" >> gradle.properties
+
 # Copy gradle configuration files
 COPY settings.gradle.kts .
 COPY build.gradle.kts .
@@ -50,11 +59,22 @@ RUN ./gradlew --version --no-daemon
 # Copy source code
 COPY composeApp composeApp
 
-# Build the wasm target
+# Build the wasm target with optimized settings
+# Capture full output to build.log for debugging
 RUN ./gradlew :composeApp:wasmJsBrowserDistribution \
     --no-daemon \
+    --no-parallel \
     --stacktrace \
-    --info
+    --info \
+    2>&1 | tee build.log || \
+    (echo "============================================" && \
+     echo "BUILD FAILED - Last 200 lines of output:" && \
+     echo "============================================" && \
+     tail -200 build.log && \
+     echo "============================================" && \
+     echo "Checking for partial build artifacts..." && \
+     ls -la composeApp/build/ 2>/dev/null || true && \
+     exit 1)
 
 # Verify the build output exists
 RUN ls -la composeApp/build/dist/wasmJs/productionExecutable && \
