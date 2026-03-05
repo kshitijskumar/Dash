@@ -1,9 +1,6 @@
 services:
   - type: web
     name: dash-app
-    runtime: docker
+    env: docker
     dockerfilePath: ./Dockerfile
-    dockerContext: .
-    envVars:
-      - key: JAVA_VERSION
-        value: 17
+    dockerContext: ./
