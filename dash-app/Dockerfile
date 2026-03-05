@@ -3,10 +3,11 @@ FROM eclipse-temurin:17-jdk-jammy AS build
 
 WORKDIR /app
 
-# Install necessary tools
+# Install necessary tools and dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
+    libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Android SDK (minimal - just what's needed for gradle configuration)
