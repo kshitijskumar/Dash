@@ -23,6 +23,7 @@ class DashboardViewModel(
 
     private var allLinks: List<DashLinkDomain>? = null
     private var searchJob: Job? = null
+    private var initializeJob: Job? = null
 
     init {
         processIntent(DashboardIntent.Initialize)
@@ -48,6 +49,9 @@ class DashboardViewModel(
     private fun initialize() {
         val userId = "kshitij"
         val token = "ksh1234"
+        
+        // Cancel previous initialize job if running
+        initializeJob?.cancel()
 
         updateState { 
             it.copy(
@@ -59,7 +63,7 @@ class DashboardViewModel(
             ) 
         }
 
-        viewModelScope.launch {
+        initializeJob = viewModelScope.launch {
             when (val result = getUserDashboardUseCase.invoke(userId, token)) {
                 is Result.Success -> {
                     allLinks = result.data.links

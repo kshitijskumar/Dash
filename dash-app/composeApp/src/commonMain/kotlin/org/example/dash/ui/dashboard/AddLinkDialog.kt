@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
@@ -17,7 +18,8 @@ fun AddLinkDialog(
     onDismiss: () -> Unit,
     onNameChange: (String) -> Unit,
     onUrlChange: (String) -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onErrorDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -51,14 +53,51 @@ fun AddLinkDialog(
                         enabled = !dialogState.isLoading
                     ) {
                         Text(
-                            text = "✕",
-                            style = MaterialTheme.typography.headlineMedium,
+                            text = "Close",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
+                
+                // Error card
+                dialogState.error?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            
+                            TextButton(onClick = onErrorDismiss) {
+                                Text(
+                                    text = "Dismiss",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
 
                 // Name field
                 OutlinedTextField(

@@ -8,6 +8,7 @@ import org.example.dash.data.model.AddLinkRequest
 import org.example.dash.data.model.AddLinkResponse
 import org.example.dash.data.model.DashLinksResponse
 import org.example.dash.data.network.HttpClientFactory
+import org.example.dash.utils.AppJson
 
 class RemoteDataSource(
     private val httpClient: HttpClient = HttpClientFactory.create()
@@ -32,7 +33,7 @@ class RemoteDataSource(
         println("RemoteDataSource: Adding link to: $url with request: $request")
         val response = httpClient.post(url) {
             contentType(ContentType.Application.Json)
-            setBody(request)
+            setBody(AppJson.encodeToString(request))
         }.body<AddLinkResponse>()
         println("RemoteDataSource: Got response: $response")
         return response

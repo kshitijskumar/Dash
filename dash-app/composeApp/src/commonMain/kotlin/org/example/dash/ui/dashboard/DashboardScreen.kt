@@ -37,16 +37,19 @@ fun DashboardScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.processIntent(DashboardIntent.OpenAddLinkDialog) },
-                containerColor = Color(0xFF1976D2),
-                contentColor = Color.White
-            ) {
-                Text(
-                    text = "+",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold
-                )
+            // Only show FAB when not loading
+            if (!state.isLoading) {
+                FloatingActionButton(
+                    onClick = { viewModel.processIntent(DashboardIntent.OpenAddLinkDialog) },
+                    containerColor = Color(0xFF1976D2),
+                    contentColor = Color.White
+                ) {
+                    Text(
+                        text = "+",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -143,20 +146,9 @@ fun DashboardScreen(
             onUrlChange = { url -> 
                 viewModel.processIntent(DashboardIntent.UpdateLinkUrl(url)) 
             },
-            onSave = { viewModel.processIntent(DashboardIntent.SaveLink) }
+            onSave = { viewModel.processIntent(DashboardIntent.SaveLink) },
+            onErrorDismiss = { viewModel.processIntent(DashboardIntent.DismissAddLinkError) }
         )
-        
-        // Show snackbar for add link errors - only when error exists
-        dialogState.error?.let { errorMessage ->
-            LaunchedEffect(errorMessage) {
-                snackbarHostState.showSnackbar(
-                    message = errorMessage,
-                    actionLabel = "Dismiss",
-                    duration = SnackbarDuration.Short
-                )
-                viewModel.processIntent(DashboardIntent.DismissAddLinkError)
-            }
-        }
     }
 }
 
