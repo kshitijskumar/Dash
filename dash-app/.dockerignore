@@ -1,0 +1,27 @@
+# Build outputs
+**/build/
+**/.gradle/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+dark-mode-preview.html
+DARK_MODE_COLORS.md
+
+# Test files
+**/test/
+**/*Test.kt
