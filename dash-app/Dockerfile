@@ -38,13 +38,17 @@ COPY gradle.properties .
 # Create local.properties for Android SDK location
 RUN echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-# Override memory settings for cloud build environment
+# CRITICAL: Further reduce memory for stability
+# Previous: 2GB Gradle + 1.5GB Kotlin = 3.5GB total
+# New: 1.5GB Gradle + 1GB Kotlin = 2.5GB total
 RUN echo "" >> gradle.properties && \
-    echo "# Docker build overrides" >> gradle.properties && \
-    echo "org.gradle.jvmargs=-Xmx2048M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512m" >> gradle.properties && \
-    echo "kotlin.daemon.jvmargs=-Xmx1536M" >> gradle.properties && \
+    echo "# Docker build overrides - further optimized" >> gradle.properties && \
+    echo "org.gradle.jvmargs=-Xmx1536M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=384m" >> gradle.properties && \
+    echo "kotlin.daemon.jvmargs=-Xmx1024M" >> gradle.properties && \
+    echo "kotlin.incremental=false" >> gradle.properties && \
     echo "org.gradle.parallel=false" >> gradle.properties && \
-    echo "org.gradle.caching=false" >> gradle.properties
+    echo "org.gradle.caching=false" >> gradle.properties && \
+    echo "org.gradle.configureondemand=false" >> gradle.properties
 
 # Copy gradle configuration files
 COPY settings.gradle.kts .
@@ -59,17 +63,27 @@ RUN ./gradlew --version --no-daemon
 # Copy source code
 COPY composeApp composeApp
 
-# Build the wasm application
-RUN ./gradlew :composeApp:wasmJsBrowserDistribution \
+# Build with detailed logging and timeout handling
+# Capture output for debugging if it fails
+RUN echo "=== Starting WasmJS build $(date) ===" && \
+    ./gradlew :composeApp:wasmJsBrowserDistribution \
     --no-daemon \
     --no-parallel \
-    --stacktrace
+    --stacktrace \
+    --console=plain \
+    2>&1 | tee build.log || \
+    (echo "=== BUILD FAILED $(date) ===" && \
+     echo "=== Last 100 lines of build output ===" && \
+     tail -100 build.log && \
+     echo "=== Checking for OOM or timeout indicators ===" && \
+     grep -i "out of memory\|killed\|timeout\|heap space" build.log || echo "No obvious error pattern found" && \
+     exit 1)
 
-# Verify the build output and show what was created
-RUN echo "=== Verifying build output ===" && \
+# Verify the build output exists
+RUN echo "=== Verifying build output $(date) ===" && \
     ls -la composeApp/build/dist/wasmJs/productionExecutable/ && \
-    echo "=== Files in output directory ===" && \
-    find composeApp/build/dist/wasmJs/productionExecutable -type f | head -20
+    echo "=== Build artifacts ===" && \
+    ls -lh composeApp/build/dist/wasmJs/productionExecutable/ | head -10
 
 # Production stage - serve static files
 FROM nginx:alpine
@@ -85,7 +99,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Verify files were copied successfully
 RUN echo "=== Nginx html directory contents ===" && \
-    ls -la /usr/share/nginx/html/ && \
+    ls -lh /usr/share/nginx/html/ && \
     echo "=== Verifying index.html exists ===" && \
     test -f /usr/share/nginx/html/index.html && echo "✓ index.html found" || (echo "✗ ERROR: index.html not found!" && exit 1)
 
