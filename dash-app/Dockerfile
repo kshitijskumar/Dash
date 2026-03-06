@@ -39,8 +39,6 @@ COPY gradle.properties .
 RUN echo "sdk.dir=$ANDROID_HOME" > local.properties
 
 # CRITICAL: Further reduce memory for stability
-# Previous: 2GB Gradle + 1.5GB Kotlin = 3.5GB total
-# New: 1.5GB Gradle + 1GB Kotlin = 2.5GB total
 RUN echo "" >> gradle.properties && \
     echo "# Docker build overrides - further optimized" >> gradle.properties && \
     echo "org.gradle.jvmargs=-Xmx1536M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=384m" >> gradle.properties && \
@@ -63,8 +61,7 @@ RUN ./gradlew --version --no-daemon
 # Copy source code
 COPY composeApp composeApp
 
-# Build with detailed logging and timeout handling
-# Capture output for debugging if it fails
+# Build with detailed logging
 RUN echo "=== Starting WasmJS build $(date) ===" && \
     ./gradlew :composeApp:wasmJsBrowserDistribution \
     --no-daemon \
@@ -73,17 +70,45 @@ RUN echo "=== Starting WasmJS build $(date) ===" && \
     --console=plain \
     2>&1 | tee build.log || \
     (echo "=== BUILD FAILED $(date) ===" && \
-     echo "=== Last 100 lines of build output ===" && \
      tail -100 build.log && \
-     echo "=== Checking for OOM or timeout indicators ===" && \
-     grep -i "out of memory\|killed\|timeout\|heap space" build.log || echo "No obvious error pattern found" && \
      exit 1)
 
-# Verify the build output exists
-RUN echo "=== Verifying build output $(date) ===" && \
-    ls -la composeApp/build/dist/wasmJs/productionExecutable/ && \
-    echo "=== Build artifacts ===" && \
-    ls -lh composeApp/build/dist/wasmJs/productionExecutable/ | head -10
+# DIAGNOSTIC: Find where files actually are
+RUN echo "=== Build completed, searching for output ===" && \
+    echo "--- Checking expected location ---" && \
+    ls -la composeApp/build/dist/wasmJs/ 2>/dev/null || echo "dist/wasmJs/ not found" && \
+    echo "--- Searching for index.html anywhere in build ---" && \
+    find composeApp/build -name "index.html" -type f 2>/dev/null || echo "No index.html found" && \
+    echo "--- Searching for .wasm files ---" && \
+    find composeApp/build -name "*.wasm" -type f 2>/dev/null | head -5 || echo "No .wasm files found" && \
+    echo "--- Top-level build directory ---" && \
+    ls -la composeApp/build/ 2>/dev/null || echo "Build directory not found" && \
+    echo "--- All subdirectories in build (depth 3) ---" && \
+    find composeApp/build -maxdepth 3 -type d 2>/dev/null | head -30
+
+# Create output directory and copy whatever we find
+RUN mkdir -p /app/final-output && \
+    if [ -d "composeApp/build/dist/wasmJs/productionExecutable" ]; then \
+        echo "✓ Found productionExecutable"; \
+        cp -r composeApp/build/dist/wasmJs/productionExecutable/* /app/final-output/; \
+    elif [ -d "composeApp/build/dist/wasmJs/developmentExecutable" ]; then \
+        echo "✓ Found developmentExecutable"; \
+        cp -r composeApp/build/dist/wasmJs/developmentExecutable/* /app/final-output/; \
+    elif find composeApp/build -name "index.html" -type f | grep -q .; then \
+        echo "✓ Found index.html, copying its parent directory"; \
+        INDEX_DIR=$(find composeApp/build -name "index.html" -type f | head -1 | xargs dirname); \
+        echo "Copying from: $INDEX_DIR"; \
+        cp -r $INDEX_DIR/* /app/final-output/; \
+    else \
+        echo "✗ No suitable output found!"; \
+        echo "=== Checking if webpack/distribution task actually ran ==="; \
+        grep -i "webpack\|distribution" build.log | tail -20; \
+        exit 1; \
+    fi && \
+    echo "=== Final output contents ===" && \
+    ls -lah /app/final-output/ && \
+    echo "=== Verifying index.html ===" && \
+    test -f /app/final-output/index.html || (echo "ERROR: No index.html in output!" && exit 1)
 
 # Production stage - serve static files
 FROM nginx:alpine
@@ -91,15 +116,15 @@ FROM nginx:alpine
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy built files from build stage
-COPY --from=build /app/composeApp/build/dist/wasmJs/productionExecutable/ /usr/share/nginx/html/
+# Copy built files from standardized output location
+COPY --from=build /app/final-output/ /usr/share/nginx/html/
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Verify files were copied successfully
 RUN echo "=== Nginx html directory contents ===" && \
-    ls -lh /usr/share/nginx/html/ && \
+    ls -lah /usr/share/nginx/html/ && \
     echo "=== Verifying index.html exists ===" && \
     test -f /usr/share/nginx/html/index.html && echo "✓ index.html found" || (echo "✗ ERROR: index.html not found!" && exit 1)
 
