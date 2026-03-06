@@ -63,29 +63,51 @@ COPY composeApp composeApp
 RUN echo "=== Available WasmJS Tasks ===" && \
     ./gradlew tasks --all --no-daemon 2>&1 | grep -i "wasmjs" || echo "No wasmJs tasks found in grep"
 
-# Build with the distribution task and capture output
-RUN ./gradlew :composeApp:wasmJsBrowserDistribution \
+# Build with the distribution task and capture output.
+# Use pipefail so Gradle failures are not hidden by `tee`.
+RUN set -o pipefail && \
+    ./gradlew :composeApp:wasmJsBrowserDistribution \
     --no-daemon \
     --no-parallel \
     --stacktrace \
+    --console=plain \
     2>&1 | tee build.log
 
 # DIAGNOSTIC: Show what was actually built
 RUN echo "=== Build completed, investigating output ===" && \
     echo "--- Checking build/dist structure ---" && \
-    ls -la composeApp/build/dist/ 2>/dev/null || echo "No dist/ directory" && \
-    ls -la composeApp/build/dist/wasmJs/ 2>/dev/null || echo "No dist/wasmJs/ directory" && \
-    echo "--- Looking for any wasmJs directories ---" && \
-    find composeApp/build -type d -name "*wasmJs*" -o -name "*wasm*" 2>/dev/null || echo "No wasm directories found" && \
+    (ls -la composeApp/build/dist/ 2>/dev/null || echo "No dist/ directory") && \
+    (ls -la composeApp/build/dist/wasmJs/ 2>/dev/null || echo "No dist/wasmJs/ directory") && \
+    echo "--- Looking for any wasm directories ---" && \
+    (find composeApp/build -type d \( -name "*wasmJs*" -o -name "*wasm*" \) 2>/dev/null || echo "No wasm directories found") && \
     echo "--- Looking for .wasm and .js files ---" && \
-    find composeApp/build -type f \( -name "*.wasm" -o -name "*.mjs" -o -name "*.js" \) 2>/dev/null | head -30 || echo "No wasm/js files found" && \
+    (find composeApp/build -type f \( -name "*.wasm" -o -name "*.mjs" -o -name "*.js" \) 2>/dev/null | head -30 || true) && \
     echo "--- Full build directory listing (top level) ---" && \
     ls -la composeApp/build/
 
-# Verify build output exists (fail fast if not)
-RUN ls -la composeApp/build/dist/wasmJs/productionExecutable/ && \
-    test -f composeApp/build/dist/wasmJs/productionExecutable/index.html && \
-    echo "✓ Build output verified"
+# Normalize output into one fixed directory for the runtime image.
+RUN mkdir -p /app/output && \
+    if [ -d "composeApp/build/dist/wasmJs/productionExecutable" ] && [ -f "composeApp/build/dist/wasmJs/productionExecutable/index.html" ]; then \
+        echo "✓ Using productionExecutable"; \
+        cp -R composeApp/build/dist/wasmJs/productionExecutable/. /app/output/; \
+    elif [ -d "composeApp/build/dist/wasmJs/developmentExecutable" ] && [ -f "composeApp/build/dist/wasmJs/developmentExecutable/index.html" ]; then \
+        echo "✓ Using developmentExecutable"; \
+        cp -R composeApp/build/dist/wasmJs/developmentExecutable/. /app/output/; \
+    else \
+        INDEX_PATH="$(find composeApp/build -type f -name index.html | head -1)"; \
+        if [ -n "$INDEX_PATH" ]; then \
+            echo "✓ Using discovered output path: $INDEX_PATH"; \
+            OUTPUT_DIR="$(dirname "$INDEX_PATH")"; \
+            cp -R "$OUTPUT_DIR"/. /app/output/; \
+        else \
+            echo "✗ Could not locate wasm output. Last 120 log lines:"; \
+            tail -120 build.log; \
+            exit 1; \
+        fi; \
+    fi && \
+    test -f /app/output/index.html && \
+    echo "✓ Build output verified" && \
+    ls -lah /app/output
 
 # Production stage - serve static files
 FROM nginx:alpine
@@ -93,8 +115,8 @@ FROM nginx:alpine
 # CRITICAL: Remove nginx default files first
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy built files directly from build stage
-COPY --from=build /app/composeApp/build/dist/wasmJs/productionExecutable/ /usr/share/nginx/html/
+# Copy normalized build output from build stage
+COPY --from=build /app/output/ /usr/share/nginx/html/
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
